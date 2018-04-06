@@ -1,18 +1,21 @@
 'use strict';
 
 import React from 'react';
-import ReactNative, {
-  View,
-  Animated,
-  Easing,
-  NativeModules
-} from 'react-native';
+import ReactNative, { Animated, Easing, NativeModules, View } from 'react-native';
 
 import PropTypes from 'prop-types'
 
-import {createResponder} from 'react-native-gesture-responder';
+import { createResponder } from 'react-native-gesture-responder';
 import Scroller from 'react-native-scroller';
-import {Rect, Transform, transformedRect, availableTranslateSpace, fitCenterRect, alignedRect, getTransform} from './TransformUtils';
+import {
+  alignedRect,
+  availableTranslateSpace,
+  fitCenterRect,
+  getTransform,
+  Rect,
+  Transform,
+  transformedRect
+} from './TransformUtils';
 
 export default class ViewTransformer extends React.Component {
 
@@ -43,7 +46,7 @@ export default class ViewTransformer extends React.Component {
     this.transformedContentRect = this.transformedContentRect.bind(this);
     this.animate = this.animate.bind(this);
 
-    this.scroller = new Scroller(true, (dx, dy, scroller) =>{
+    this.scroller = new Scroller(true, (dx, dy, scroller) => {
       if (dx === 0 && dy === 0 && scroller.isFinished()) {
         this.animateBounce();
         return;
@@ -122,10 +125,10 @@ export default class ViewTransformer extends React.Component {
           style={{
             flex: 1,
             transform: [
-                  {scale: this.state.scale},
-                  {translateX: this.state.translateX},
-                  {translateY: this.state.translateY}
-                ]
+              { scale: this.state.scale },
+              { translateX: this.state.translateX },
+              { translateY: this.state.translateY }
+            ]
           }}>
           {this.props.children}
         </View>
@@ -134,9 +137,9 @@ export default class ViewTransformer extends React.Component {
   }
 
   onLayout(e) {
-    const {width, height} = e.nativeEvent.layout;
-    if(width !== this.state.width || height !== this.state.height) {
-      this.setState({width, height});
+    const { width, height } = e.nativeEvent.layout;
+    if (width !== this.state.width || height !== this.state.height) {
+      this.setState({ width, height });
     }
     this.measureLayout();
 
@@ -146,8 +149,8 @@ export default class ViewTransformer extends React.Component {
   measureLayout() {
     let handle = ReactNative.findNodeHandle(this.refs['innerViewRef']);
     NativeModules.UIManager.measure(handle, ((x, y, width, height, pageX, pageY) => {
-      if(typeof pageX === 'number' && typeof pageY === 'number') { //avoid undefined values on Android devices
-        if(this.state.pageX !== pageX || this.state.pageY !== pageY) {
+      if (typeof pageX === 'number' && typeof pageY === 'number') { //avoid undefined values on Android devices
+        if (this.state.pageX !== pageX || this.state.pageY !== pageY) {
           this.setState({
             pageX: pageX,
             pageY: pageY
@@ -160,13 +163,12 @@ export default class ViewTransformer extends React.Component {
 
   onResponderGrant(evt, gestureState) {
     this.props.onTransformStart && this.props.onTransformStart();
-    this.setState({responderGranted: true});
+    this.setState({ responderGranted: true });
     this.measureLayout();
   }
 
   onResponderMove(evt, gestureState) {
     this.cancelAnimation();
-
     let dx = gestureState.moveX - gestureState.previousMoveX;
     let dy = gestureState.moveY - gestureState.previousMoveY;
     if (this.props.enableResistance) {
@@ -175,7 +177,7 @@ export default class ViewTransformer extends React.Component {
       dy = d.dy;
     }
 
-    if(!this.props.enableTranslate) {
+    if (!this.props.enableTranslate) {
       dx = dy = 0;
     }
 
@@ -195,6 +197,9 @@ export default class ViewTransformer extends React.Component {
       ));
       transform = getTransform(this.contentRect(), rect);
     } else {
+      if (this.state.scale == 1) {
+        return true;
+      }
       if (Math.abs(dx) > 2 * Math.abs(dy)) {
         dy = 0;
       } else if (Math.abs(dy) > 2 * Math.abs(dx)) {
@@ -203,17 +208,19 @@ export default class ViewTransformer extends React.Component {
       transform.translateX = this.state.translateX + dx / this.state.scale;
       transform.translateY = this.state.translateY + dy / this.state.scale;
     }
-
     this.updateTransform(transform);
+    if (this.props.onScaleChanged) {
+      this.props.onScaleChanged(this.state.scale)
+    }
     return true;
   }
 
   onResponderRelease(evt, gestureState) {
     let handled = this.props.onTransformGestureReleased && this.props.onTransformGestureReleased({
-        scale: this.state.scale,
-        translateX: this.state.translateX,
-        translateY: this.state.translateY
-      });
+      scale: this.state.scale,
+      translateX: this.state.translateX,
+      translateY: this.state.translateY
+    });
     if (handled) {
       return;
     }
@@ -235,17 +242,16 @@ export default class ViewTransformer extends React.Component {
 
       this.performDoubleTapUp(pivotX, pivotY);
     } else {
-      if(this.props.enableTranslate) {
+      if (this.props.enableTranslate) {
         this.performFling(gestureState.vx, gestureState.vy);
       } else {
         this.animateBounce();
       }
     }
+    if (this.props.onScaleChanged) {
+      this.props.onScaleChanged(this.state.scale)
+    }
   }
-
-
-
-
 
 
   performFling(vx, vy) {
@@ -354,7 +360,7 @@ export default class ViewTransformer extends React.Component {
 
     this.state.animator.removeAllListeners();
     this.state.animator.setValue(0);
-    this.state.animator.addListener((state) =>{
+    this.state.animator.addListener((state) => {
       let progress = state.value;
 
       let left = fromRect.left + (targetRect.left - fromRect.left) * progress;
